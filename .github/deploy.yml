@@ -16,6 +16,6 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          scripts: |
+          script: |
             cd /var/www/html/twitch-hot
-            git pull origin main
+            git pull origin master
