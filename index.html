@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Twitch-hot</title>
+    <link rel="stylesheet" href="normalize.css">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-wrapper">
+        <div class="navbar-sitename">Twitch Top Games</div>
+          <ul class="navbar-list">
+            <li><a href="#"></a></li>
+            <li><a href="#"></a></li>
+            <li><a href="#"></a></li>
+            <li><a href="#"></a></li>
+            <li><a href="#"></a></li>
+        </ul>
+      </div>
+    </nav>
+    <main>
+      <div class="game__info">
+        <div class="game__name"></div>
+        <div class="desc">Top popular live streams sorted by current viewers</div>
+      </div>
+      <div class="channels"></div>
+    </main>
+  </body>
+  <div class="modal-overlay">
+    <div class="modal">
+      <button class="modal__close">✕</button>
+      <div class="modal__embed" id="twitch-embed"></div>
+    </div>
+  </div>
+  <script src="https://embed.twitch.tv/embed/v1.js"></script>
+  <script src="config.js"></script>
+  <script src="index.js"></script>
+  </script>
+</html>

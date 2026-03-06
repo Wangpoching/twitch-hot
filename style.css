@@ -1,0 +1,203 @@
+.navbar {
+	box-shadow: -1.4px -1.4px 6px 0 #97a2a0;
+	height: auto;
+	background: linear-gradient(to top, rgba(20, 10, 40, 0.95), rgba(20, 10, 40, 0.6));
+}
+
+.navbar-wrapper {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: row;
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 0 12px;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.navbar-sitename {
+	text-align: center;
+	font-size: 32px;
+	margin-bottom: 0;
+	font-family: "Inter", sans-serif;
+	color: white;
+	font-weight: normal;
+}
+
+.navbar-list {
+	list-style: none;
+	padding: 0;
+	display: flex;
+}
+
+.navbar-list {
+	width: auto;
+	margin: 0;
+}
+
+.navbar-list li.active a, .navbar-list li:hover a {
+	background: #ff7286;
+	color: white;
+}
+
+.navbar-list li a {
+	display: inline-block; /* 或 inline-block */
+ 	text-align: center;
+	text-decoration: none;
+	color: #010101;
+	padding: 12px 8px;
+	display: block;
+	transition: background 0.5s;
+	padding: 42px 30px;
+	font-size: 16px;
+	color: white;
+}
+
+main {
+  background: #0e0e10;
+  padding: 36px;
+}
+
+.game__info {
+	text-align: center;
+	color: white;
+	font-weight: bold;
+}
+
+.game__name {
+	font-size: 28px;
+}
+
+.desc {
+	margin-top: 16px;
+	font-size: 16px;
+}
+
+.channels {
+	margin-top: 50px;
+	box-sizing: border-box;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	grid-auto-rows: 300px;
+	gap: 30px;
+}
+
+.channels img {
+	width: 100%;
+	height: 100%;
+}
+
+.channel {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	position: relative;
+	border: 1px solid #aaa;
+	cursor: pointer;
+	transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.channel:hover {
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+	transform: scale(1.03);
+}
+
+.channel__info {
+	box-sizing: border-box;
+	background: rgba(0, 0, 0, 0.85);
+	box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.5); /* 往上延伸的陰影 */
+	padding: 10px;
+	display: flex;
+	align-items: center;
+	position: absolute;
+	bottom: 0;
+	width: 100%;
+	height: 80px;
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover; /* 圖片不變形 */
+  overflow: hidden;
+  border: 1px solid yellow;
+  flex-basis: 50px;
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.channel__detail {
+	min-width: 0;  /* flex-shrink: 1 的意思是「允許我縮小」，但縮小是有底線的——flex 預設不會讓元素縮小到比它內容還小，這個底線就是 min-width: auto */
+	margin-left: 8px;
+	color: white;
+	flex: 1;
+}
+
+.channel__name {
+	white-space: nowrap; /* 強制不換行 */
+	overflow: hidden; /* 隱藏溢出的內容 */
+	text-overflow: ellipsis
+}
+
+.modal-overlay {
+  display: none; /* 預設隱藏 */
+  position: fixed;
+  inset: 0; /* 等於 top/right/bottom/left 都是 0 */
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 100;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-overlay.active {
+  display: flex; /* 顯示時用 flex 置中 */
+}
+
+.modal {
+  position: relative;
+  width: 70vw;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.modal__close {
+  position: absolute;
+  top: -36px;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+@media only screen and (max-width: 768px) {
+	.navbar-wrapper {
+		padding: 0;
+		flex-direction: column;
+	}
+
+	.navbar-sitename {
+		font-size: 20px;
+		margin-top: 20px;
+		margin-bottom: 10px;
+	}
+
+	.navbar-list {
+		width: 100%;
+	}
+
+	.navbar-list li {
+		flex: 1;
+	}
+
+	.navbar-list li a {
+		padding: 20px;
+		font-size: 8px;
+	}
+}
