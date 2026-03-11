@@ -1,9 +1,11 @@
 let cursor
 let observer
 let twitchEmbed
+let isLoading = false
 const main = document.querySelector('.channels')
 const navs = [...document.querySelector('.navbar-list').querySelectorAll('li')]
 
+// 打開直播頁面
 function openModal(userLogin) {
   document.querySelector('.modal-overlay').classList.add('active')
   twitchEmbed = new Twitch.Embed('twitch-embed', {
@@ -15,12 +17,14 @@ function openModal(userLogin) {
   })
 }
 
+// 關閉直播頁面
 function closeModal() {
   document.querySelector('.modal-overlay').classList.remove('active')
   document.querySelector('#twitch-embed').innerHTML = '' // destroy embed
   twitchEmbed = null
 }
 
+// Ajax
 function xhr(params, cb) {
   var xhr = new XMLHttpRequest()
   xhr.onload = function() {
@@ -38,6 +42,7 @@ function xhr(params, cb) {
   xhr.send()
 }
 
+// 獲取熱門遊戲列表
 function getStreams(gameId, cursor, number, cb) {
   // 獲取 Top20 熱門的 Channel
   xhr({
@@ -64,7 +69,8 @@ function getStreams(gameId, cursor, number, cb) {
   })
 }
 
-function appendChannels(channelInfos, users) {
+// 新增遊戲實況到 DOM
+function appendChannels(channelInfos, users = []) {
   for (let channelInfo of channelInfos) {
     const channel = document.createElement('div')
     channel.classList.add('channel')
@@ -81,17 +87,17 @@ function appendChannels(channelInfos, users) {
     channel.querySelector('.thumb_nail').src = channelInfo.thumbnail_url.replace('{width}', 900).replace('{height}', 900)
     channel.querySelector('.channel__name').innerText = channelInfo.title
     channel.querySelector('.author__name').innerText = channelInfo.user_name
-    channel.querySelector('.avatar img').src = users.find(user => user.id === channelInfo.user_id).profile_image_url || ''
+    channel.querySelector('.avatar img').src = users.find(user => user.id === channelInfo.user_id)?.profile_image_url || ''
     channel.dataset.userLogin = channelInfo.user_login
     main.appendChild(channel)
   }
-  // 把 sentinel 移到最後面
   const sentinel = document.querySelector('.sentinel')
   if (sentinel) {
-    main.appendChild(sentinel) // appendChild 會自動把已存在的元素移到最後
+    main.appendChild(sentinel)
   }
 }
 
+// 監聽滾動到底事件
 function addSentinel() {
   if (observer) observer.disconnect()
   // 無限滾動
@@ -107,9 +113,13 @@ function addSentinel() {
   observer.observe(sentinel)
 }
 
+// 載入實況以及相關資源
 function loadStreams(gameId, afterCursor, number, isFirst) {
+  if (isLoading) return  // 還在載入中就不重複發
+  isLoading = true
   getStreams(gameId, afterCursor, number, (err, streamsData) => {
     if (err) {
+      isLoading = false
       alert('載入熱門實況發生問題')
       return
     }
@@ -126,6 +136,7 @@ function loadStreams(gameId, afterCursor, number, isFirst) {
         },
         url: `https://api.twitch.tv/helix/users?id=${userIds.join('&id=')}`
       }, (err, res) => {
+        isLoading = false
         let jsonResponse
         try {
           jsonResponse = JSON.parse(res)
@@ -143,11 +154,17 @@ function loadStreams(gameId, afterCursor, number, isFirst) {
           addSentinel()
         }
       })
+    } else {
+      isLoading = false  // 沒有更多資料了
+      const sentinel = document.querySelector('.sentinel')
+      if (sentinel) sentinel.remove()  // 沒資料了，不需要再觀察
     }
   })
 }
 
+// 第一次載入實況(切換遊戲)
 function initializeStreams(gameId, gameName) {
+  isLoading = false
   const gameNameEle = document.querySelector('.game__name')
   gameNameEle.innerText = gameName
   cursor = ''
@@ -192,6 +209,7 @@ xhr({
   }
 })
 
+// 切換遊戲
 document.querySelector('.navbar-list').addEventListener('click', (e) => {
   const li = e.target.closest('li')
   if (!li) return
