@@ -9,63 +9,40 @@ const navs = [...document.querySelector('.navbar-list').querySelectorAll('li')]
 function openModal(userLogin) {
   document.querySelector('.modal-overlay').classList.add('active')
   twitchEmbed = new Twitch.Embed('twitch-embed', {
-      width: 854,
-      height: 480,
-      channel: userLogin,  // 帶入主播的 user_login
-      parent: ['localhost'],
-      autoplay: false
+    width: 854,
+    height: 480,
+    channel: userLogin,
+    parent: ['localhost'],
+    autoplay: false
   })
 }
 
 // 關閉直播頁面
 function closeModal() {
   document.querySelector('.modal-overlay').classList.remove('active')
-  document.querySelector('#twitch-embed').innerHTML = '' // destroy embed
+  document.querySelector('#twitch-embed').innerHTML = ''
   twitchEmbed = null
 }
 
 // Ajax
-function xhr(params, cb) {
-  var xhr = new XMLHttpRequest()
-  xhr.onload = function() {
-    cb(null, xhr.responseText)
-  }
-  xhr.onerror = function() {
-    cb(new Error('網路連線失敗'))
-  }
-  xhr.open(params.method, params.url, true)
-  if (Object.keys(params).includes('header')) {
-    for (const [key, value] of Object.entries(params.header)) {
-      xhr.setRequestHeader(key, value)
-    }
-  }
-  xhr.send()
+async function ajax(params) {
+  const response = await fetch(params.url, {
+    method: params.method,
+    headers: params.header || {}
+  })
+  if (!response.ok) throw new Error('網路連線失敗')
+  return response.json()
 }
 
 // 獲取熱門遊戲列表
-function getStreams(gameId, cursor, number, cb) {
-  // 獲取 Top20 熱門的 Channel
-  xhr({
+async function getStreams(gameId, afterCursor, number) {
+  return ajax({
     method: 'GET',
     header: {
       Authorization: CONFIG.TWITCH_TOKEN,
       'Client-Id': CONFIG.TWITCH_CLIENT_ID
     },
-    url: `https://api.twitch.tv/helix/streams?game_id=${gameId}&first=${number}&after=${cursor || ''}`
-  }, (err, res) => {
-    if (err) {
-      cb(new Error('網路連線失敗'))
-    } else {
-      let jsonResponse
-      try {
-        jsonResponse = JSON.parse(res)
-      } catch (err) {
-        cb(new Error('解析資料發生問題'))
-        return
-      }
-
-      cb(null, jsonResponse)
-    }
+    url: `https://api.twitch.tv/helix/streams?game_id=${gameId}&first=${number}&after=${afterCursor || ''}`
   })
 }
 
@@ -100,7 +77,6 @@ function appendChannels(channelInfos, users = []) {
 // 監聽滾動到底事件
 function addSentinel() {
   if (observer) observer.disconnect()
-  // 無限滾動
   const sentinel = document.createElement('div')
   main.appendChild(sentinel)
   sentinel.classList.add('sentinel')
@@ -114,90 +90,65 @@ function addSentinel() {
 }
 
 // 載入實況以及相關資源
-function loadStreams(gameId, afterCursor, number, isFirst) {
-  if (isLoading) return  // 還在載入中就不重複發
+async function loadStreams(gameId, afterCursor, number, isFirst) {
+  if (isLoading) return
   isLoading = true
-  getStreams(gameId, afterCursor, number, (err, streamsData) => {
-    if (err) {
-      isLoading = false
-      alert('載入熱門實況發生問題')
-      return
-    }
+  try {
+    const streamsData = await getStreams(gameId, afterCursor, number)
     const channelInfos = streamsData.data
     if (channelInfos.length) {
       cursor = streamsData.pagination.cursor
       const userIds = channelInfos.map(info => info.user_id)
-      // 獲得頭貼
-      xhr({
-        method: 'GET',
-        header: {
-          Authorization: CONFIG.TWITCH_TOKEN,
-          'Client-Id': CONFIG.TWITCH_CLIENT_ID
-        },
-        url: `https://api.twitch.tv/helix/users?id=${userIds.join('&id=')}`
-      }, (err, res) => {
-        isLoading = false
-        let jsonResponse
-        try {
-          jsonResponse = JSON.parse(res)
-        } catch (err) {
-          // 抓不到頭貼就留空
-          appendChannels(channelInfos)
-          if (isFirst) {
-            addSentinel()
-          }
-          return
-        }
-        const users = jsonResponse.data
-        appendChannels(channelInfos, users)
-        if (isFirst) {
-          addSentinel()
-        }
-      })
+      try {
+        const usersData = await ajax({
+          method: 'GET',
+          header: {
+            Authorization: CONFIG.TWITCH_TOKEN,
+            'Client-Id': CONFIG.TWITCH_CLIENT_ID
+          },
+          url: `https://api.twitch.tv/helix/users?id=${userIds.join('&id=')}`
+        })
+        appendChannels(channelInfos, usersData.data)
+      } catch (err) {
+        // 抓不到頭貼就留空
+        appendChannels(channelInfos)
+      }
+      if (isFirst) addSentinel()
     } else {
-      isLoading = false  // 沒有更多資料了
+      // 沒有更多資料，移除 sentinel
       const sentinel = document.querySelector('.sentinel')
-      if (sentinel) sentinel.remove()  // 沒資料了，不需要再觀察
+      if (sentinel) sentinel.remove()
     }
-  })
+  } catch (err) {
+    alert('載入熱門實況發生問題')
+  } finally {
+    isLoading = false
+  }
 }
 
 // 第一次載入實況(切換遊戲)
-function initializeStreams(gameId, gameName) {
+async function initializeStreams(gameId, gameName) {
   isLoading = false
-  const gameNameEle = document.querySelector('.game__name')
-  gameNameEle.innerText = gameName
+  document.querySelector('.game__name').innerText = gameName
   cursor = ''
   main.innerHTML = ''
   for (let nav of navs) {
-    if (nav.classList.contains('active')) {
-      nav.classList.remove('active')
-    }
-    if (nav.dataset.gameId === gameId) {
-      nav.classList.add('active')
-    }
+    nav.classList.toggle('active', nav.dataset.gameId === gameId)
   }
-  loadStreams(gameId, cursor, 20, true)  
+  await loadStreams(gameId, cursor, 20, true)
 }
 
-xhr({
-  method: 'GET',
-  header: {
-    Authorization: CONFIG.TWITCH_TOKEN,
-    'Client-Id': CONFIG.TWITCH_CLIENT_ID
-  },
-  url: 'https://api.twitch.tv/helix/games/top?first=5'
-}, (err, res) => {
-  if (err) {
-    alert('系統發生問題')
-  } else {
-    let jsonResponse
-    try {
-      jsonResponse = JSON.parse(res)
-    } catch (err) {
-      alert('解析資料發生問題')
-      return
-    }
+// 初始化：獲取熱門遊戲並載入第一個遊戲的實況
+;(async () => {
+  try {
+    const jsonResponse = await ajax({
+      method: 'GET',
+      header: {
+        Authorization: CONFIG.TWITCH_TOKEN,
+        'Client-Id': CONFIG.TWITCH_CLIENT_ID
+      },
+      url: 'https://api.twitch.tv/helix/games/top?first=5'
+    })
     const gameNames = jsonResponse.data.map(ele => ele.name)
     const gameIds = jsonResponse.data.map(ele => ele.id)
     for (let i = 0; i < gameNames.length; i++) {
@@ -206,8 +157,10 @@ xhr({
       navs[i].dataset.gameName = gameNames[i]
     }
     initializeStreams(gameIds[0], gameNames[0])
+  } catch (err) {
+    alert('系統發生問題')
   }
-})
+})()
 
 // 切換遊戲
 document.querySelector('.navbar-list').addEventListener('click', (e) => {
@@ -220,13 +173,12 @@ document.querySelector('.navbar-list').addEventListener('click', (e) => {
 main.addEventListener('click', (e) => {
   const channel = e.target.closest('.channel')
   if (!channel) return
-  const userLogin = channel.dataset.userLogin // 等一下要記得在 appendChannels 塞這個
-  openModal(userLogin)
+  openModal(channel.dataset.userLogin)
 })
 
 // 點 overlay 關閉
 document.querySelector('.modal-overlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeModal() // 只有點到 overlay 本身才關閉
+  if (e.target === e.currentTarget) closeModal()
 })
 
 // 點 X 關閉
